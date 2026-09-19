@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quant-management"
+version = "0.1.0"
+description = "Prácticas y proyecto final de Quant Portfolio Management"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.26,<3",
+    "pandas>=2.2,<4",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=6.29,<8",
+    "jupyterlab>=4,<5",
+    "matplotlib>=3.8,<4",
+    "pytest>=8,<10",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["quantmgmt*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
