@@ -1,39 +1,53 @@
 """Medidas de riesgo para la práctica 1.
 
-Convenciones comunes a todas las funciones:
-
-- Reciben retornos simples en decimal (0.01 = 1 %) indexados por fecha. Para
-  pasar de precios o NAV a retornos, usa :func:`to_returns`.
-- Una ``pd.Series`` devuelve un número. Un ``pd.DataFrame`` (un activo o una
-  cartera por columna) devuelve una ``pd.Series`` con un valor por columna,
-  para poder comparar carteras.
-- ``periods_per_year`` indica la frecuencia de los datos en las funciones que
-  anualizan: 252 para datos diarios, 52 semanales y 12 mensuales.
-- Los ``NaN`` se ignoran columna a columna.
-- Las caídas (drawdown) van en positivo: 0.35 significa un 35 % por debajo
-  del máximo anterior.
+Convenciones comunes:
+- Retornos simples en decimal, con fechas en filas y activos en columnas.
+- periods_per_year indica la frecuencia: 252 diaria, 52 semanal y 12 mensual.
+- Los valores ausentes se omiten; rolling exige ventanas completas.
+- Las caídas se expresan en positivo: 0.25 representa una caída del 25 %.
+- Las tasas de referencia y los objetivos se indican por período.
 """
 
-from quantmgmt.risk.drawdown import (
-    drawdown_series,
-    max_drawdown,
-    recovery_time,
-    time_under_water,
-)
 from quantmgmt.risk.returns import (
     annualized_return,
     cagr,
     cumulative_returns,
     to_returns,
 )
+from quantmgmt.risk.dispersion import (
+    annualized_volatility,
+    downside_deviation,
+    rolling_volatility,
+)
+from quantmgmt.risk.drawdown import (
+    drawdown_series,
+    max_drawdown,
+    recovery_time,
+    time_under_water,
+)
+from quantmgmt.risk.ratios import (
+    calmar_ratio,
+    sharpe_ratio,
+    sortino_ratio,
+    tracking_error,
+)
 
+
+# Funciones públicas del módulo de riesgo.
 __all__ = [
     "annualized_return",
     "cagr",
     "cumulative_returns",
+    "to_returns",
+    "annualized_volatility",
+    "downside_deviation",
+    "rolling_volatility",
     "drawdown_series",
     "max_drawdown",
     "recovery_time",
     "time_under_water",
-    "to_returns",
+    "calmar_ratio",
+    "sharpe_ratio",
+    "sortino_ratio",
+    "tracking_error",
 ]
