@@ -9,6 +9,8 @@ Convenciones comunes:
 - VaR y CVaR se calculan por período, sin anualización automática.
 - VaR y CVaR expresan pérdidas en positivo y pueden ser negativos.
 - La curtosis se expresa como exceso de curtosis, con referencia normal cero.
+- La métrica propia, scare_probability, es la probabilidad de perder más de
+  un límite tras entrar en una fecha cualquiera (ver quantmgmt.risk.custom).
 """
 
 from quantmgmt.risk.returns import (
@@ -42,6 +44,7 @@ from quantmgmt.risk.tail import (
     skewness,
     kurtosis,
 )
+from quantmgmt.risk.custom import scare_probability, worst_loss_ahead
 
 
 # Funciones públicas del módulo de riesgo.
@@ -72,4 +75,7 @@ __all__ = [
     "cvar_parametric",
     "skewness",
     "kurtosis",
+    # Métrica propia.
+    "scare_probability",
+    "worst_loss_ahead",
 ]

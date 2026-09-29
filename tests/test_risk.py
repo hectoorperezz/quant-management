@@ -138,6 +138,45 @@ def test_drawdown_metrics_per_column():
     assert risk.recovery_time(returns).to_dict() == {"A": 2.0, "B": 0.0}
 
 
+# --- Métrica propia: probabilidad de susto ------------------------------------
+
+
+def make_scare_returns() -> pd.Series:
+    """Valor al cierre: 1, 0,9, 0,72, 1,08, 1,08."""
+    return make_series([0.0, -0.10, -0.20, 0.50, 0.0])
+
+
+def test_worst_loss_ahead():
+    # Con horizonte 2: quien entra en 1 cae hasta 0,72 (-28 %); en 0,9, hasta
+    # 0,72 (-20 %); en 0,72 ya solo sube (0 %).
+    worst = risk.worst_loss_ahead(make_scare_returns(), horizon=2)
+    np.testing.assert_allclose(worst, [0.28, 0.20, 0.0])
+
+
+def test_scare_probability():
+    returns = make_scare_returns()
+    # Pérdidas de 28 %, 20 % y 0 %: dos de tres pasan del 15 %, una del 25 %.
+    assert risk.scare_probability(returns, 0.15, horizon=2) == pytest.approx(2 / 3)
+    assert risk.scare_probability(returns, 0.25, horizon=2) == pytest.approx(1 / 3)
+
+
+def test_scare_probability_per_column():
+    returns = pd.DataFrame(
+        {"A": [0.0, -0.10, -0.20, 0.50, 0.0], "B": [0.01] * 5}
+    )
+    result = risk.scare_probability(returns, 0.15, horizon=2)
+    assert result.to_dict() == pytest.approx({"A": 2 / 3, "B": 0.0})
+
+
+def test_scare_probability_without_full_horizon_is_nan():
+    assert np.isnan(risk.scare_probability(make_scare_returns(), horizon=10))
+
+
+def test_scare_probability_rejects_invalid_limit():
+    with pytest.raises(ValueError, match="loss_limit"):
+        risk.scare_probability(make_scare_returns(), loss_limit=1.5)
+
+
 # --- Dispersión --------------------------------------------------------------
 
 
