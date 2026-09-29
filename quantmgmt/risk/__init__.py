@@ -45,6 +45,7 @@ from quantmgmt.risk.tail import (
     kurtosis,
 )
 from quantmgmt.risk.custom import scare_probability, worst_loss_ahead
+from quantmgmt.risk.summary import risk_summary
 
 
 # Funciones públicas del módulo de riesgo.
@@ -78,4 +79,6 @@ __all__ = [
     # Métrica propia.
     "scare_probability",
     "worst_loss_ahead",
+    # Tabla resumen.
+    "risk_summary",
 ]

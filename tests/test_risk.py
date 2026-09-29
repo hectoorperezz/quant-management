@@ -641,3 +641,26 @@ def test_var_parametric_invalid_method():
 
     with pytest.raises(ValueError, match="method"):
         var_parametric(returns, method="otro")
+
+
+# --- Tabla resumen --------------------------------------------------------------
+
+
+def test_risk_summary_has_one_row_per_asset():
+    returns = pd.DataFrame(
+        {
+            "A": [0.01, -0.02, 0.015, -0.005, 0.02] * 60,
+            "B": [0.002, -0.001, 0.003, -0.002, 0.001] * 60,
+        },
+        index=pd.date_range("2024-01-01", periods=300, freq="D"),
+    )
+    summary = risk.risk_summary(returns, benchmark=returns["A"])
+
+    # Una fila por cartera y los mismos valores que las funciones sueltas.
+    assert list(summary.index) == ["A", "B"]
+    assert summary.loc["B", "CAGR"] == pytest.approx(risk.cagr(returns["B"]))
+    assert summary.loc["A", "Máx. drawdown"] == pytest.approx(
+        risk.max_drawdown(returns["A"])
+    )
+    assert summary.loc["A", "Tracking error"] == pytest.approx(0.0)
+    assert not summary.drop(columns="Tiempo de recuperación").isna().any().any()
