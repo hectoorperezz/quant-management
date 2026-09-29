@@ -45,14 +45,13 @@ Clona el repositorio y ejecuta desde su raíz:
 git clone https://github.com/hectoorperezz/quant-management.git
 cd quant-management
 uv sync --locked
-uv run --locked python -c "from pathlib import Path; Path('data/cache').mkdir(parents=True, exist_ok=True)"
 ```
 
 Si ya tienes el repositorio clonado, empieza por `cd quant-management`.
 `uv sync --locked` crea `.venv`, instala `quantmgmt` en modo editable y las
 dependencias de desarrollo, y respeta las versiones de `uv.lock`. uv utiliza
 Python 3.11 según `.python-version` y puede descargarlo si no está disponible.
-La carpeta de caché debe crearse en cada clon porque Git no la versiona.
+La carpeta `data/cache/` se crea sola la primera vez que se descargan precios.
 
 ## Ejemplo de uso
 
@@ -62,41 +61,66 @@ Comprueba que el paquete se importa correctamente:
 uv run --locked python -c "from quantmgmt import data, risk, analytics, optimizers, backtest; print('quantmgmt listo')"
 ```
 
-Abre el notebook de la primera práctica:
+Descarga precios, pásalos a retornos y compara varias carteras:
+
+```python
+from quantmgmt import risk
+from quantmgmt.data import download_prices
+
+# Precios diarios ajustados de Yahoo Finance, guardados en data/cache/.
+prices = download_prices(
+    ["SPY", "TLT", "GLD", "HYG", "BRK-B"], start="2007-05-01", end="2026-09-29"
+)
+returns = risk.to_returns(prices)
+
+risk.sharpe_ratio(returns)       # un valor por activo
+risk.max_drawdown(returns)       # caídas en positivo: 0.55 = -55 %
+risk.scare_probability(returns)  # métrica propia
+
+# Tabla con todas las métricas, una fila por activo.
+risk.risk_summary(returns, benchmark=returns["SPY"])
+```
+
+El análisis completo de la práctica 1 está en el notebook:
 
 ```bash
 uv run --locked jupyter lab notebooks/01_riesgo.ipynb
 ```
 
-El notebook incluye este ejemplo de rentabilidades sintéticas en formato
-decimal, con una semilla fija para repetir los resultados:
+## Módulo de riesgo
 
-```python
-import numpy as np
-import pandas as pd
+`quantmgmt.risk` reúne las métricas de la práctica 1. Todas reciben una
+`pd.Series` o un `pd.DataFrame` de retornos simples indexados por fecha y
+devuelven un número o un valor por columna, para comparar carteras.
 
-rng = np.random.default_rng(42)
-returns = pd.DataFrame(
-    rng.normal(loc=0.0005, scale=0.01, size=(252, 3)),
-    columns=["Activo A", "Activo B", "Activo C"],
-)
-print(returns.head())
-```
+| Familia | Funciones |
+| --- | --- |
+| Rentabilidad | `to_returns`, `cumulative_returns`, `cagr`, `annualized_return` |
+| Dispersión | `annualized_volatility`, `downside_deviation`, `rolling_volatility` |
+| Caídas desde máximos | `drawdown_series`, `max_drawdown`, `time_under_water`, `recovery_time` |
+| Ratios | `sharpe_ratio`, `sortino_ratio`, `calmar_ratio`, `tracking_error` |
+| Cola | `var_historical`, `var_parametric`, `cvar_historical`, `cvar_parametric`, `skewness`, `kurtosis` |
+| Métrica propia | `scare_probability`, `worst_loss_ahead` |
+| Resumen | `risk_summary` |
 
-Son datos de demostración: no representan precios ni rentabilidades reales.
-Las funciones de riesgo se incorporarán a `quantmgmt/risk/` al desarrollar P1.
+Las caídas, el VaR y el CVaR se expresan en positivo, como pérdidas. Las
+convenciones completas están en el docstring de `quantmgmt/risk/__init__.py`.
+
+**Métrica propia: probabilidad de susto.** Si un inversor entra en una fecha
+cualquiera, ¿qué probabilidad hay de que llegue a perder más de lo que
+soporta (20 % por defecto) durante el año siguiente? Recorre todas las fechas
+de entrada posibles y depende del perfil del inversor (`loss_limit` y
+`horizon`), por lo que permite comparar carteras para un cliente concreto.
+Está documentada en `quantmgmt/risk/custom.py`.
 
 ## Desarrollo y pruebas
 
 Implementa la lógica reutilizable en `quantmgmt/`, documenta los experimentos
-en `notebooks/` y añade sus pruebas en `tests/`. Una vez existan pruebas:
+en `notebooks/` y añade sus pruebas en `tests/`. Para ejecutarlas:
 
 ```bash
 uv run --locked pytest
 ```
-
-La estructura inicial todavía no contiene pruebas; en ese estado pytest
-informa de que no ha recogido ninguna y devuelve el código 5.
 
 Para añadir una dependencia, usa `uv add nombre-paquete` o
 `uv add --dev nombre-paquete` y versiona juntos `pyproject.toml` y `uv.lock`.
@@ -116,5 +140,5 @@ git add quantmgmt/risk/ tests/
 git commit -m "feat(risk): añadir volatilidad anualizada y sus pruebas"
 ```
 
-Este mensaje es un ejemplo para cuando se implemente esa función. La caché de
-datos, `.venv` y los checkpoints de Jupyter quedan fuera del historial.
+La caché de datos, `.venv` y los checkpoints de Jupyter quedan fuera del
+historial.
