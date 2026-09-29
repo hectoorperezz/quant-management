@@ -1,5 +1,6 @@
 """Comprobaciones comunes a las funciones del módulo de riesgo."""
 
+import numpy as np
 import pandas as pd
 
 PandasData = pd.Series | pd.DataFrame
@@ -16,8 +17,22 @@ def check_pandas(data: object, name: str = "returns") -> None:
 
 
 def check_periods_per_year(periods_per_year: float) -> None:
-    """Comprueba que ``periods_per_year`` es positivo."""
-    if periods_per_year <= 0:
+    """Comprueba que ``periods_per_year`` es finito y positivo."""
+    if not np.isfinite(periods_per_year) or periods_per_year <= 0:
         raise ValueError(
-            f"periods_per_year debe ser positivo, no {periods_per_year}"
+            f"periods_per_year debe ser finito y positivo, no {periods_per_year}"
+        )
+
+
+def check_finite(value: float, name: str) -> None:
+    """Comprueba que ``value`` es un número finito."""
+    if not np.isfinite(value):
+        raise ValueError(f"{name} debe ser finito, no {value}")
+
+
+def check_window(window: int, min_size: int = 2) -> None:
+    """Comprueba que ``window`` es un entero mayor o igual que ``min_size``."""
+    if not isinstance(window, (int, np.integer)) or window < min_size:
+        raise ValueError(
+            f"window debe ser un entero mayor o igual que {min_size}, no {window}"
         )

@@ -3,14 +3,22 @@
 import numpy as np
 import pandas as pd
 
+from quantmgmt.risk._checks import (
+    PandasData,
+    check_finite,
+    check_pandas,
+    check_periods_per_year,
+    check_window,
+)
+
 
 def annualized_volatility(
-    returns: pd.Series | pd.DataFrame,
-    periods_per_year: int = 252,
+    returns: PandasData,
+    periods_per_year: float = 252,
 ) -> float | pd.Series:
     """Anualiza la volatilidad de retornos decimales, omitiendo valores ausentes."""
-    if not np.isfinite(periods_per_year) or periods_per_year <= 0:
-        raise ValueError("periods_per_year debe ser finito y positivo.")
+    check_pandas(returns)
+    check_periods_per_year(periods_per_year)
 
     # Calculamos la desviación típica muestral por activo.
     period_volatility = returns.std(axis=0, ddof=1)
@@ -20,8 +28,8 @@ def annualized_volatility(
 
 
 def downside_deviation(
-    returns: pd.Series | pd.DataFrame,
-    periods_per_year: int = 252,
+    returns: PandasData,
+    periods_per_year: float = 252,
     target: float = 0.0,
 ) -> float | pd.Series:
     """Calcula la desviación a la baja anualizada.
@@ -29,11 +37,9 @@ def downside_deviation(
     target es la rentabilidad objetivo por período, en formato decimal.
     Los valores ausentes se omiten; los retornos sobre el objetivo cuentan como cero.
     """
-    if not np.isfinite(periods_per_year) or periods_per_year <= 0:
-        raise ValueError("periods_per_year debe ser finito y positivo.")
-
-    if not np.isfinite(target):
-        raise ValueError("target debe ser finito.")
+    check_pandas(returns)
+    check_periods_per_year(periods_per_year)
+    check_finite(target, "target")
 
     # Conservamos las desviaciones negativas respecto al objetivo.
     shortfalls = (returns - target).clip(upper=0.0)
@@ -46,20 +52,18 @@ def downside_deviation(
 
 
 def rolling_volatility(
-    returns: pd.Series | pd.DataFrame,
+    returns: PandasData,
     window: int = 63,
-    periods_per_year: int = 252,
-) -> pd.Series | pd.DataFrame:
+    periods_per_year: float = 252,
+) -> PandasData:
     """Calcula la volatilidad anualizada sobre una ventana móvil.
 
     window indica el número de observaciones, no días de calendario.
     Exige una ventana completa de valores válidos por activo.
     """
-    if not isinstance(window, (int, np.integer)) or window < 2:
-        raise ValueError("window debe ser un entero mayor o igual que 2.")
-
-    if not np.isfinite(periods_per_year) or periods_per_year <= 0:
-        raise ValueError("periods_per_year debe ser finito y positivo.")
+    check_pandas(returns)
+    check_window(window)
+    check_periods_per_year(periods_per_year)
 
     # Calculamos la desviación típica en cada ventana de observaciones.
     period_volatility = returns.rolling(
