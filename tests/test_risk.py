@@ -18,6 +18,15 @@ from quantmgmt.risk.ratios import (
     tracking_error,
 )
 
+from quantmgmt.risk.tail import (
+    var_historical,
+    cvar_historical,
+    var_parametric,
+    cvar_parametric,
+    skewness,
+    kurtosis,
+)
+
 
 def make_series(values: list[float]) -> pd.Series:
     """Serie diaria de ejemplo indexada por fecha."""
@@ -378,6 +387,8 @@ def test_downside_deviation_invalid_target(target):
         downside_deviation(returns, target=target)
 
 
+# --- Ratios ----------------------------------------------------
+
 
 def test_sharpe_ratio_known_result():
     # Comprueba la resta del tipo libre de riesgo y la anualización.
@@ -473,4 +484,121 @@ def test_ratios_zero_denominator(function):
 
     assert np.isnan(result)
 
+
+# --- Riesgo de Cola ----------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "confidence, expected_var, expected_cvar",
+    [
+        (0.75, 0.04, 0.06),
+        (0.80, 0.048, 0.08),
+    ],
+)
+def test_historical_tail_known_results(
+    confidence, expected_var, expected_cvar
+):
+    # Comprueba cuantiles, selección de cola, valores ausentes y varias columnas.
+    returns = pd.DataFrame(
+        {
+            "Activo A": [-0.08, -0.04, 0.0, 0.02, 0.04, np.nan],
+            "Activo B": [-0.16, -0.08, 0.0, 0.04, 0.08, np.nan],
+        }
+    )
+
+    result_var = var_historical(returns, confidence)
+    result_cvar = cvar_historical(returns, confidence)
+
+    # El segundo activo duplica los retornos y también ambas medidas.
+
+    expected_var = pd.Series(
+    [expected_var, 2 * expected_var],
+    index=returns.columns,
+    name=1.0 - confidence,
+    )
     
+    expected_cvar = pd.Series(
+        [expected_cvar, 2 * expected_cvar],
+        index=returns.columns,
+    )
+
+    pd.testing.assert_series_equal(
+        result_var, expected_var,
+        check_exact=False, rtol=1e-7, atol=1e-12,
+    )
+    pd.testing.assert_series_equal(
+        result_cvar, expected_cvar,
+        check_exact=False, rtol=1e-7, atol=1e-12,
+    )
+
+
+def test_skewness_and_excess_kurtosis():
+    # Comprueba los estimadores muestrales y que la curtosis sea exceso de curtosis.
+    returns = pd.Series([0.0, 0.0, 0.0, 0.04])
+
+    assert skewness(returns) == pytest.approx(2.0)
+    assert kurtosis(returns) == pytest.approx(4.0)
+
+
+@pytest.mark.parametrize("method", ["gaussian", "cornish_fisher"])
+def test_var_parametric_known_result(method):
+    # Comprueba ambos métodos con media, volatilidad y momentos conocidos.
+    returns = pd.Series([0.0, 0.0, 0.0, 0.04])
+
+    result = var_parametric(
+        returns,
+        confidence=0.95,
+        method=method,
+    )
+
+    # Media 0.01, desviación típica 0.02 y cuantil normal del 5 %.
+    z = -1.6448536269514722
+
+    if method == "cornish_fisher":
+        # Esta muestra tiene asimetría 2 y exceso de curtosis 4.
+        z = (
+            z
+            + (z**2 - 1) * 2 / 6
+            + (z**3 - 3 * z) * 4 / 24
+            - (2 * z**3 - 5 * z) * 4 / 36
+        )
+
+    expected = -(0.01 + 0.02 * z)
+    assert result == pytest.approx(expected)
+
+
+def test_cvar_parametric_known_result():
+    # Comprueba el CVaR normal al 95 % con media cero y volatilidad 0.01.
+    returns = pd.Series([-0.01, 0.0, 0.01])
+
+    result = cvar_parametric(returns, confidence=0.95)
+
+    # La pérdida media de la cola normal es aproximadamente 2.0627 veces sigma.
+    expected = 0.02062712807507425
+    assert result == pytest.approx(expected)
+
+
+@pytest.mark.parametrize(
+    "function",
+    [
+        var_historical,
+        cvar_historical,
+        var_parametric,
+        cvar_parametric,
+    ],
+)
+@pytest.mark.parametrize("confidence", [0.0, 1.0, np.nan, np.inf])
+def test_tail_invalid_confidence(function, confidence):
+    # Comprueba que las cuatro funciones rechacen niveles de confianza inválidos.
+    returns = pd.Series([-0.02, 0.0, 0.01, 0.03])
+
+    with pytest.raises(ValueError, match="confidence"):
+        function(returns, confidence=confidence)
+
+
+def test_var_parametric_invalid_method():
+    # Comprueba que un método desconocido produzca un error explícito.
+    returns = pd.Series([-0.02, 0.0, 0.01, 0.03])
+
+    with pytest.raises(ValueError, match="method"):
+        var_parametric(returns, method="otro")

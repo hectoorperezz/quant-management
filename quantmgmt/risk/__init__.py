@@ -6,6 +6,9 @@ Convenciones comunes:
 - Los valores ausentes se omiten; rolling exige ventanas completas.
 - Las caídas se expresan en positivo: 0.25 representa una caída del 25 %.
 - Las tasas de referencia y los objetivos se indican por período.
+- VaR y CVaR se calculan por período, sin anualización automática.
+- VaR y CVaR expresan pérdidas en positivo y pueden ser negativos.
+- La curtosis se expresa como exceso de curtosis, con referencia normal cero.
 """
 
 from quantmgmt.risk.returns import (
@@ -31,23 +34,42 @@ from quantmgmt.risk.ratios import (
     sortino_ratio,
     tracking_error,
 )
+from quantmgmt.risk.tail import (
+    var_historical,
+    cvar_historical,
+    var_parametric,
+    cvar_parametric,
+    skewness,
+    kurtosis,
+)
 
 
 # Funciones públicas del módulo de riesgo.
 __all__ = [
+    # Rentabilidad.
     "annualized_return",
     "cagr",
     "cumulative_returns",
     "to_returns",
+    # Dispersión.
     "annualized_volatility",
     "downside_deviation",
     "rolling_volatility",
+    # Caídas desde máximos.
     "drawdown_series",
     "max_drawdown",
     "recovery_time",
     "time_under_water",
+    # Ratios y comparación.
     "calmar_ratio",
     "sharpe_ratio",
     "sortino_ratio",
     "tracking_error",
+    # Riesgo de cola y forma de la distribución.
+    "var_historical",
+    "cvar_historical",
+    "var_parametric",
+    "cvar_parametric",
+    "skewness",
+    "kurtosis",
 ]

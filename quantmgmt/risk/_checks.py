@@ -36,3 +36,11 @@ def check_window(window: int, min_size: int = 2) -> None:
         raise ValueError(
             f"window debe ser un entero mayor o igual que {min_size}, no {window}"
         )
+
+
+def check_confidence(confidence: float) -> None:
+    """Comprueba que el nivel de confianza esté entre cero y uno."""
+    check_finite(confidence, "confidence")
+
+    if not 0.0 < confidence < 1.0:
+        raise ValueError("confidence debe estar entre 0 y 1, sin incluirlos.")
