@@ -3,7 +3,11 @@
 import pandas as pd
 
 from quantmgmt.risk._checks import PandasData, check_pandas
-from quantmgmt.risk.custom import scare_probability
+from quantmgmt.risk.custom import (
+    scare_probability,
+    tail_weighted_downside_risk,
+    tail_weighted_downside_ratio,
+)
 from quantmgmt.risk.dispersion import annualized_volatility, downside_deviation
 from quantmgmt.risk.drawdown import max_drawdown, recovery_time, time_under_water
 from quantmgmt.risk.ratios import (
@@ -29,6 +33,8 @@ def risk_summary(
     periods_per_year: float = 252,
     risk_free_rate: float = 0.0,
     confidence: float = 0.95,
+    tail_fraction: float = 0.05,
+    tail_weight: float = 0.5,
 ) -> pd.DataFrame:
     """Calcula todas las métricas de riesgo en una tabla, una fila por cartera.
 
@@ -42,9 +48,16 @@ def risk_summary(
     periods_per_year : float
         Periodos por año: 252 si son diarios.
     risk_free_rate : float
-        Tipo libre de riesgo por periodo, usado en Sharpe y Sortino.
+        Retorno libre de riesgo por período. Referencia para Sharpe,
+        Sortino y las métricas de incumplimiento ponderadas por cola.
     confidence : float
         Nivel de confianza del VaR y el CVaR.
+    tail_fraction : float
+        Proporción de períodos que forman la cola de incumplimientos.
+        Por defecto, 0.05 selecciona el peor 5 %.
+    tail_weight : float
+        Peso de la cola en nuestra medida de riesgo.
+        Por defecto, 0.5 da igual peso al componente general y al de cola.
 
     Devuelve
     --------
@@ -80,6 +93,24 @@ def risk_summary(
         "Asimetría": skewness(returns),
         "Curtosis (exceso)": kurtosis(returns),
         "Probabilidad de susto": scare_probability(returns),
+        # Mide incumplimientos frente al libre de riesgo, reforzando los extremos.
+        "Riesgo de incumplimiento con cola (por período)": (
+            tail_weighted_downside_risk(
+                returns,
+                target=risk_free_rate,
+                tail_fraction=tail_fraction,
+                tail_weight=tail_weight,
+            )
+        ),
+        # Relaciona el retorno sobre esa misma referencia con el riesgo anterior.
+        "Ratio de incumplimiento con cola (por período)": (
+            tail_weighted_downside_ratio(
+                returns,
+                benchmark=risk_free_rate,
+                tail_fraction=tail_fraction,
+                tail_weight=tail_weight,
+            )
+        ),
     }
     if benchmark is not None:
         metrics["Tracking error"] = tracking_error(

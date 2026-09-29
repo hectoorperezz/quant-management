@@ -11,6 +11,9 @@ Convenciones comunes:
 - La curtosis se expresa como exceso de curtosis, con referencia normal cero.
 - La métrica propia, scare_probability, es la probabilidad de perder más de
   un límite tras entrar en una fecha cualquiera (ver quantmgmt.risk.custom).
+- tail_weighted_downside_risk combina la media de incumplimientos al cuadrado
+  con la de su peor cola; tail_weighted_downside_ratio divide el exceso medio
+  sobre la referencia entre ese riesgo. Ambos van por período.
 """
 
 from quantmgmt.risk.returns import (
@@ -44,7 +47,12 @@ from quantmgmt.risk.tail import (
     skewness,
     kurtosis,
 )
-from quantmgmt.risk.custom import scare_probability, worst_loss_ahead
+from quantmgmt.risk.custom import (
+    scare_probability,
+    tail_weighted_downside_ratio,
+    tail_weighted_downside_risk,
+    worst_loss_ahead,
+)
 from quantmgmt.risk.summary import risk_summary
 
 
@@ -76,8 +84,10 @@ __all__ = [
     "cvar_parametric",
     "skewness",
     "kurtosis",
-    # Métrica propia.
+    # Métricas propias.
     "scare_probability",
+    "tail_weighted_downside_ratio",
+    "tail_weighted_downside_risk",
     "worst_loss_ahead",
     # Tabla resumen.
     "risk_summary",
