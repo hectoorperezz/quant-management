@@ -11,6 +11,13 @@ from quantmgmt.risk.dispersion import (
     rolling_volatility,
 )
 
+from quantmgmt.risk.ratios import (
+    sharpe_ratio,
+    sortino_ratio,
+    calmar_ratio,
+    tracking_error,
+)
+
 
 def make_series(values: list[float]) -> pd.Series:
     """Serie diaria de ejemplo indexada por fecha."""
@@ -369,3 +376,101 @@ def test_downside_deviation_invalid_target(target):
 
     with pytest.raises(ValueError, match="target"):
         downside_deviation(returns, target=target)
+
+
+
+def test_sharpe_ratio_known_result():
+    # Comprueba la resta del tipo libre de riesgo y la anualización.
+    returns = pd.Series([-0.01, 0.0, 0.01])
+
+    result = sharpe_ratio(
+        returns,
+        periods_per_year=12,
+        risk_free_rate=0.01,
+    )
+
+    # Media en exceso -0.01 y desviación típica 0.01 por período.
+    expected = -np.sqrt(12)
+    assert result == pytest.approx(expected)
+
+
+def test_sortino_ratio_nonzero_target():
+    # Comprueba que el objetivo se aplique una sola vez y se anualice el ratio.
+    returns = pd.Series([-0.01, 0.02, 0.04])
+
+    result = sortino_ratio(
+        returns,
+        periods_per_year=12,
+        target=0.01,
+    )
+
+    # Media en exceso anual 0.08 y desviación a la baja anual 0.04.
+    assert result == pytest.approx(2.0)
+
+
+def test_calmar_ratio_multiple_assets():
+    # Comprueba el CAGR, el signo del drawdown y los resultados por columna.
+    dates = pd.to_datetime(["2025-04-30", "2025-08-31", "2025-12-31"])
+    returns = pd.DataFrame(
+        {
+            "Activo A": [0.10, -0.20, 0.25],
+            "Activo B": [0.20, -0.50, 1.00],
+        },
+        index=dates,
+    )
+
+    result = calmar_ratio(returns, periods_per_year=3)
+
+    # Un año: A gana 10 % y cae 20 %; B gana 20 % y cae 50 %.
+    expected = pd.Series(
+        [0.10 / 0.20, 0.20 / 0.50],
+        index=returns.columns,
+    )
+
+    pd.testing.assert_series_equal(
+        result,
+        expected,
+        check_exact=False,
+        rtol=1e-7,
+        atol=1e-12,
+    )
+
+
+def test_tracking_error_aligns_dates():
+    # Comprueba que se comparen fechas comunes y se anualicen las diferencias.
+    returns = pd.Series(
+        [0.50, 0.01, 0.03, 0.05],
+        index=pd.date_range("2026-01-01", periods=4, freq="D"),
+    )
+    benchmark = pd.Series(
+        [0.02, 0.03, 0.04, -0.50],
+        index=pd.date_range("2026-01-02", periods=4, freq="D"),
+    )
+
+    result = tracking_error(
+        returns,
+        benchmark,
+        periods_per_year=252,
+    )
+
+    # En las tres fechas comunes, las diferencias son -0.01, 0 y 0.01.
+    expected = 0.01 * np.sqrt(252)
+    assert result == pytest.approx(expected)
+
+
+@pytest.mark.parametrize(
+    "function",
+    [sharpe_ratio, sortino_ratio, calmar_ratio],
+)
+def test_ratios_zero_denominator(function):
+    # Comprueba que un denominador cero devuelva NaN, sin dividir entre cero.
+    returns = pd.Series(
+        [0.0, 0.0, 0.0],
+        index=pd.date_range("2026-01-01", periods=3, freq="D"),
+    )
+
+    result = function(returns, periods_per_year=252)
+
+    assert np.isnan(result)
+
+    
