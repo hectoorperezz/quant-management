@@ -10,8 +10,16 @@ Convenciones comunes a todas las funciones:
 - ``periods_per_year`` indica la frecuencia de los datos en las funciones que
   anualizan: 252 para datos diarios, 52 semanales y 12 mensuales.
 - Los ``NaN`` se ignoran columna a columna.
+- Las caídas (drawdown) van en positivo: 0.35 significa un 35 % por debajo
+  del máximo anterior.
 """
 
+from quantmgmt.risk.drawdown import (
+    drawdown_series,
+    max_drawdown,
+    recovery_time,
+    time_under_water,
+)
 from quantmgmt.risk.returns import (
     annualized_return,
     cagr,
@@ -23,5 +31,9 @@ __all__ = [
     "annualized_return",
     "cagr",
     "cumulative_returns",
+    "drawdown_series",
+    "max_drawdown",
+    "recovery_time",
+    "time_under_water",
     "to_returns",
 ]

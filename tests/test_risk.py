@@ -70,6 +70,58 @@ def test_rejects_non_pandas_input():
         risk.cagr([0.10, 0.10])
 
 
+# --- Caídas desde máximos ----------------------------------------------------
+
+
+def make_drawdown_returns() -> pd.Series:
+    """Valor de 1 €: 1,25 (máximo), 1, 0,5 (fondo), 1, 1,5 (nuevo máximo), 1,35."""
+    return make_series([0.25, -0.20, -0.50, 1.00, 0.50, -0.10])
+
+
+def test_drawdown_series():
+    np.testing.assert_allclose(
+        risk.drawdown_series(make_drawdown_returns()),
+        [0.0, 0.20, 0.60, 0.20, 0.0, 0.10],
+        atol=1e-12,
+    )
+
+
+def test_max_drawdown():
+    # La peor caída va de 1,25 a 0,5: un 60 %.
+    assert risk.max_drawdown(make_drawdown_returns()) == pytest.approx(0.60)
+
+
+def test_drawdown_counts_losses_from_initial_capital():
+    # Si el primer día cae un 10 %, ya es una caída desde el capital inicial.
+    assert risk.max_drawdown(make_series([-0.10, 0.05])) == pytest.approx(0.10)
+
+
+def test_time_under_water():
+    # Tres periodos seguidos por debajo de 1,25 hasta superarlo con 1,5.
+    assert risk.time_under_water(make_drawdown_returns()) == 3
+
+
+def test_recovery_time():
+    # Del fondo (0,5) a superar el máximo anterior (1,5): dos periodos.
+    assert risk.recovery_time(make_drawdown_returns()) == 2
+
+
+def test_recovery_time_is_nan_if_not_recovered():
+    # 1,1 → 0,55 → 0,605: no vuelve a 1,1.
+    assert np.isnan(risk.recovery_time(make_series([0.10, -0.50, 0.10])))
+
+
+def test_drawdown_metrics_per_column():
+    # Una columna con la caída de ejemplo y otra que solo sube.
+    returns = pd.DataFrame(
+        {"A": [0.25, -0.20, -0.50, 1.00, 0.50, -0.10], "B": [0.01] * 6}
+    )
+    expected_max = {"A": 0.60, "B": 0.0}
+    assert risk.max_drawdown(returns).to_dict() == pytest.approx(expected_max)
+    assert risk.time_under_water(returns).to_dict() == {"A": 3.0, "B": 0.0}
+    assert risk.recovery_time(returns).to_dict() == {"A": 2.0, "B": 0.0}
+
+
 # --- Dispersión --------------------------------------------------------------
 
 
