@@ -13,6 +13,7 @@ MOM = "F-F_Momentum_Factor"
 
 def download_ff_factors(
     start: str = "2010-01-01",
+    end: str | None = None,
     cache_dir: str | Path = DEFAULT_CACHE_DIR,
     refresh: bool = False,
 ) -> pd.DataFrame:
@@ -22,10 +23,10 @@ def download_ff_factors(
     indexadas por fin de mes para alinearse con ``resample("ME")``.
     Mkt-RF y el resto de factores ya están en exceso sobre RF.
     """
-    cache_file = Path(cache_dir) / f"ff5_mom_{start}.csv"
+    cache_file = Path(cache_dir) / f"ff5_mom_{start}_{end or 'hoy'}.csv"    
     if refresh or not cache_file.exists():
-        ff5 = web.DataReader(FF5, "famafrench", start=start)[0]
-        mom = web.DataReader(MOM, "famafrench", start=start)[0]
+        ff5 = web.DataReader(FF5, "famafrench", start=start, end=end)[0]    
+        mom = web.DataReader(MOM, "famafrench", start=start, end=end)[0]
         mom.columns = mom.columns.str.strip()
         factors = ff5.join(mom, how="inner") / 100
         factors.index = factors.index.to_timestamp(how="end").normalize()

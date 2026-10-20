@@ -40,22 +40,26 @@ def _constraints(
     max_turnover: float | None,
 ) -> tuple[list, list]:
     """Límites por activo y restricciones comunes a todos los optimizadores."""
-    low = 0.0 if long_only else -1.0
-    high = max_weight if max_weight is not None else 1.0
+    if max_weight is not None and max_weight * n < 1:
+        raise ValueError(f"max_weight={max_weight} con {n} activos no permite sumar 1")
+    low = 0.0 if long_only else None             # None = sin límite para SciPy
+    high = max_weight if max_weight is not None else (1.0 if long_only else None)
     bounds = [(low, high)] * n
-    cons = [{"type": "eq", "fun": lambda w: w.sum() - 1.0}]          # suma 1
+    cons = [{"type": "eq", "fun": lambda w: w.sum() - 1.0}]
     if max_turnover is not None:
         if prev_weights is None:
             raise ValueError("max_turnover necesita prev_weights")
-        prev = np.asarray(prev_weights, dtype=float)
-        cons.append({"type": "ineq",                                   # >= 0
-                     "fun": lambda w: max_turnover - np.abs(w - prev).sum()})
+        prev = np.asarray(prev_weights, dtype=float).ravel()
+        if prev.shape != (n,):
+            raise ValueError(f"prev_weights debe tener {n} pesos, tiene {prev.size}")
+        cons.append({"type": "ineq", "fun": lambda w: max_turnover - np.abs(w - prev).sum()})
     return bounds, cons
 
 
 def _solve(objective, n, bounds, cons) -> np.ndarray:
-    w0 = np.full(n, 1.0 / n)                     # arranca en equiponderada
-    res = minimize(objective, w0, method="SLSQP", bounds=bounds, constraints=cons)
+    w0 = np.full(n, 1.0 / n)
+    res = minimize(objective, w0, method="SLSQP", bounds=bounds, constraints=cons,
+                   options={"ftol": 1e-12, "maxiter": 1000})
     if not res.success:
         raise RuntimeError(f"SLSQP no ha convergido: {res.message}")
     return res.x
@@ -145,6 +149,10 @@ def target_volatility(
     """Máxima rentabilidad con volatilidad <= target_vol."""
     n, m, S = len(mu), mu.to_numpy(), sigma.to_numpy()
     bounds, cons = _constraints(n, long_only, max_weight, prev_weights, max_turnover)
+    vol_min = float(np.sqrt(min_variance(sigma, long_only, max_weight, prev_weights, max_turnover) @ S
+                            @ min_variance(sigma, long_only, max_weight, prev_weights, max_turnover)))
+    if target_vol < vol_min:
+        raise ValueError(f"target_vol={target_vol:.2%} está por debajo de la mínima posible ({vol_min:.2%})")
     cons.append({"type": "ineq", "fun": lambda w: target_vol - np.sqrt(w @ S @ w)})
     w = _solve(lambda w: -(w @ m), n, bounds, cons)
     return pd.Series(w, index=mu.index, name=f"vol_{target_vol:.0%}")
