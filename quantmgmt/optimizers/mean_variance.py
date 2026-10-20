@@ -59,7 +59,7 @@ def _constraints(
 def _solve(objective, n, bounds, cons) -> np.ndarray:
     w0 = np.full(n, 1.0 / n)
     res = minimize(objective, w0, method="SLSQP", bounds=bounds, constraints=cons,
-                   options={"ftol": 1e-14, "maxiter": 1000})
+                   options={"ftol": 1e-12, "maxiter": 1000})
     if not res.success:
         raise RuntimeError(f"SLSQP no ha convergido: {res.message}")
     return res.x
