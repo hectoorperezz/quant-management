@@ -87,21 +87,25 @@ El análisis completo de la práctica 1 está en el notebook:
 uv run --locked jupyter lab notebooks/01_riesgo.ipynb
 ```
 
+
+
 ## Módulo de riesgo
 
 `quantmgmt.risk` reúne las métricas de la práctica 1. Todas reciben una
 `pd.Series` o un `pd.DataFrame` de retornos simples indexados por fecha y
 devuelven un número o un valor por columna, para comparar carteras.
 
-| Familia | Funciones |
-| --- | --- |
-| Rentabilidad | `to_returns`, `cumulative_returns`, `cagr`, `annualized_return` |
-| Dispersión | `annualized_volatility`, `downside_deviation`, `rolling_volatility` |
-| Caídas desde máximos | `drawdown_series`, `max_drawdown`, `time_under_water`, `recovery_time` |
-| Ratios | `sharpe_ratio`, `sortino_ratio`, `calmar_ratio`, `tracking_error` |
-| Cola | `var_historical`, `var_parametric`, `cvar_historical`, `cvar_parametric`, `skewness`, `kurtosis` |
-| Métrica propia | `scare_probability`, `worst_loss_ahead` |
-| Resumen | `risk_summary` |
+
+| Familia              | Funciones                                                                                        |
+| -------------------- | ------------------------------------------------------------------------------------------------ |
+| Rentabilidad         | `to_returns`, `cumulative_returns`, `cagr`, `annualized_return`                                  |
+| Dispersión           | `annualized_volatility`, `downside_deviation`, `rolling_volatility`                              |
+| Caídas desde máximos | `drawdown_series`, `max_drawdown`, `time_under_water`, `recovery_time`                           |
+| Ratios               | `sharpe_ratio`, `sortino_ratio`, `calmar_ratio`, `tracking_error`                                |
+| Cola                 | `var_historical`, `var_parametric`, `cvar_historical`, `cvar_parametric`, `skewness`, `kurtosis` |
+| Métrica propia       | `scare_probability`, `worst_loss_ahead`                                                          |
+| Resumen              | `risk_summary`                                                                                   |
+
 
 Las caídas, el VaR y el CVaR se expresan en positivo, como pérdidas. Las
 convenciones completas están en el docstring de `quantmgmt/risk/__init__.py`.
@@ -142,3 +146,22 @@ git commit -m "feat(risk): añadir volatilidad anualizada y sus pruebas"
 
 La caché de datos, `.venv` y los checkpoints de Jupyter quedan fuera del
 historial.
+
+## Práctica 2: media-varianza y modelos multifactoriales
+
+Notebook con el análisis completo:
+
+```
+uv run --locked jupyter lab notebooks/02_mpt_factores.ipynb
+```
+
+
+| Módulo                               | Funciones                                                                                                     |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| `quantmgmt.data`                     | `download_ff_factors` (factores de Ken French, mensuales, en decimal)                                         |
+| `quantmgmt.optimizers.mean_variance` | `estimate_inputs`, `portfolio_stats`, `min_variance`, `max_sharpe`, `efficient_frontier`, `target_volatility` |
+| `quantmgmt.analytics`                | `run_factor_regression` (CAPM, FF3, Carhart4, FF5, con t de Newey-West), `rolling_betas`                      |
+
+
+Datos: ETF sectoriales SPDR y SPY de Yahoo Finance, retornos mensuales simples
+hasta septiembre de 2026; factores de French hasta agosto de 2026.
