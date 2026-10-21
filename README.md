@@ -158,7 +158,7 @@ uv run --locked jupyter lab notebooks/02_mpt_factores.ipynb
 
 | Módulo                               | Funciones                                                                                                     |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| `quantmgmt.data`                     | `download_ff_factors` (factores de Ken French, mensuales, en decimal)                                         |
+| `quantmgmt.data.factors`             | `download_ff_factors` (factores de Ken French, mensuales, en decimal)                                         |
 | `quantmgmt.optimizers.mean_variance` | `estimate_inputs`, `portfolio_stats`, `min_variance`, `max_sharpe`, `efficient_frontier`, `target_volatility` |
 | `quantmgmt.analytics`                | `run_factor_regression` (CAPM, FF3, Carhart4, FF5, con t de Newey-West), `rolling_betas`                      |
 
