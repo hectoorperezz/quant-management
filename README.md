@@ -18,7 +18,7 @@ quant-management/
 │   ├── risk/                # Riesgo (P1)
 │   ├── analytics/           # Factores y atribución (P2)
 │   ├── optimizers/          # MPT, Black-Litterman y HRP (P2-P3)
-│   └── backtest/            # Prácticas posteriores
+│   └── backtest/            # Backtest fuera de muestra (P3)
 ├── notebooks/
 │   └── 01_riesgo.ipynb
 ├── tests/
